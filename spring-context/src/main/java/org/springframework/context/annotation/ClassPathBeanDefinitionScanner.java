@@ -271,17 +271,27 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 */
 	protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
+		//定义一个set用来保存扫描到的类
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
+		//循环所有扫描出来的包
 		for (String basePackage : basePackages) {
+			//获取包及其子包下的所有加了注解的类，并包装成BeanDefinition，最终以set集合返回
+			//调用的是scanCandidateComponents()方法，返回的是扫描数来的类的集合
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
+			//循环解析包下的所有扫描出来的类
 			for (BeanDefinition candidate : candidates) {
+				//获取并设置类的作用域
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
 				candidate.setScope(scopeMetadata.getScopeName());
+				//通过beanName生成器获取beanName
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
 				if (candidate instanceof AbstractBeanDefinition) {
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
 				if (candidate instanceof AnnotatedBeanDefinition) {
+					//检查并处理常用的注解：Lazy、DependsOn、Role、Description等
+					//这里的处理主要是指把常用的注解的值设置到AnnotatedBeanDefinition当中
+					//当然前提是这个类必须是AnnotatedBeanDefinition类型的，说白了就是加了注解的类
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
 				if (checkCandidate(beanName, candidate)) {
@@ -289,6 +299,8 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
+
+					//最终调用DefaultListableBeanFactory.registerBeanDefinition()方法将beanDefinition注册到beanDefinitionMap中
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}

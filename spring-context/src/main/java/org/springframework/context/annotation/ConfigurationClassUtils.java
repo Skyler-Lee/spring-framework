@@ -121,10 +121,14 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
+		//判断是否加了@Configuration注解
+		//如果加了，将BeanDefinition的configurationclass属性设置为full
 		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());
 		if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
+		//判断是否加了@Import、@Component、@ImportResource、@ComponentScan注解
+		//如果加了，将BeanDefinition的configurationclass属性设置为lite
 		else if (config != null || isConfigurationCandidate(metadata)) {
 			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
@@ -150,11 +154,13 @@ abstract class ConfigurationClassUtils {
 	 */
 	public static boolean isConfigurationCandidate(AnnotationMetadata metadata) {
 		// Do not consider an interface or an annotation...
+		//过滤掉接口和注解
 		if (metadata.isInterface()) {
 			return false;
 		}
 
 		// Any of the typical annotations found?
+		//循环判断是否加了@Import、@Component、@ImportResource、@ComponentScan
 		for (String indicator : candidateIndicators) {
 			if (metadata.isAnnotated(indicator)) {
 				return true;
