@@ -530,13 +530,16 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
+			//准备bean工厂
 			prepareBeanFactory(beanFactory);
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
+				//目前版本没有任何实现
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
+				//重要！！！完成包的扫描，并将扫描到的类注册到beanDefinitionMap中
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
@@ -653,12 +656,18 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 		// Tell the internal bean factory to use the context's class loader etc.
+		//添加一个类加载器
 		beanFactory.setBeanClassLoader(getClassLoader());
+		//添加一个bean表达式解析器
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		// Configure the bean factory with context callbacks.
+		//添加一个后置处理器ApplicationContextAwareProcessor
+		//能够在类中获得到各种*Aware（*Aware都有其作用）
+		// 内部维护的是一个list，在bean实例化时会从list中取出插手bean实例化的过程
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+		//添加自动注入被忽略的列表
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
 		beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
@@ -711,6 +720,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * <p>Must be called before singleton instantiation.
 	 */
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+		//这里需要注意的是getBeanFactoryPostProcessors()获得的是自定义的后置处理器（自己定义但没有交给spring管理的，即没有加@Component）
+		//这样的注册器可以在初始化AnnotationConfigApplicationContext环境时，在调用refresh方法之前通过addBeanFactoryPostProcessor()添加进来的
 		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
