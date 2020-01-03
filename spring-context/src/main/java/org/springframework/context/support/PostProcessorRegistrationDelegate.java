@@ -89,6 +89,7 @@ final class PostProcessorRegistrationDelegate {
 
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
 			//getBeanNamesForType()：根据类型获取bean的名称（type指的是BeanDefinition中描述的类的Class类型）
+			//这里拿到的其实就一个：ConfigurationClassPostProcessor
 			String[] postProcessorNames =
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			//这个地方可以得到一个BeanFactoryPostProcessor（BeanDefinitionRegistryPostProcessor），因为是spring默认在最开始自己注册的
@@ -289,6 +290,7 @@ final class PostProcessorRegistrationDelegate {
 			Collection<? extends BeanDefinitionRegistryPostProcessor> postProcessors, BeanDefinitionRegistry registry) {
 
 		for (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) {
+			//这里的postProcessor其实主要就是ConfigurationClassPostProcessor的对象
 			postProcessor.postProcessBeanDefinitionRegistry(registry);
 		}
 	}
