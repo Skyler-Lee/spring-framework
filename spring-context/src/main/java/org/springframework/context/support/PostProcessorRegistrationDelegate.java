@@ -67,6 +67,7 @@ final class PostProcessorRegistrationDelegate {
 			//BeanDefinitionRegistryPostProcessor是BeanFactoryPostProcessor的子类，但由于处理的逻辑不同，所以需要两个list来存
 			List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
 
+			//手动添加给spring的postprocessor
 			for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
 				if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
 					BeanDefinitionRegistryPostProcessor registryProcessor =
