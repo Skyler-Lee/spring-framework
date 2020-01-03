@@ -540,6 +540,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 				// Invoke factory processors registered as beans in the context.
 				//重要！！！完成包的扫描，并将扫描到的类注册到beanDefinitionMap中
+				//在spring环境中去执行已经被注册的factory postprocessor
+				//设置执行自定义的和spring内部的BeanFactoryPostProcessors
+				//主要是ConfigurationClassPostProcessor这个类
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
@@ -660,6 +663,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.setBeanClassLoader(getClassLoader());
 		//添加一个bean表达式解析器
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
+		//对象与String类型的转换：<property ref="xxx">
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		// Configure the bean factory with context callbacks.
@@ -693,6 +697,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Register default environment beans.
+		//意思是如果自定义的bean中没有名为“systemProperties”和“systemEnvironment”的bean，
+		//则注册两个bean，key为“systemProperties”和“systemEnvironment”，value为map
+		//这两个bean就是一系列系统配置和系统环境信息
 		if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
 			beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
 		}
@@ -721,7 +728,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
 		//这里需要注意的是getBeanFactoryPostProcessors()获得的是自定义的后置处理器（自己定义但没有交给spring管理的，即没有加@Component）
-		//这样的注册器可以在初始化AnnotationConfigApplicationContext环境时，在调用refresh方法之前通过addBeanFactoryPostProcessor()添加进来的
+		//getBeanFactoryPostProcessors()为什么得不到@Component的后置处理器？
+		//因为这个方法获取的是一个list，这个list是在AnnotationConfigApplicationContext中定义的
+		//这样的注册器可以在初始化AnnotationConfigApplicationContext环境时，
+		// 在调用refresh方法之前通过AnnotationConfigApplicationContext.addBeanFactoryPostProcessor()添加进来的
 		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
