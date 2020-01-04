@@ -1,6 +1,7 @@
 package com.xujiali.test;
 
 import com.xujiali.app.AppConfig;
+import com.xujiali.service.Service;
 import com.xujiali.service.UserService;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;

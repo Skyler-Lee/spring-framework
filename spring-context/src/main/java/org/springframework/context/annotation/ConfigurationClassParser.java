@@ -312,6 +312,7 @@ class ConfigurationClassParser {
 		}
 
 		// Process any @Import annotations
+		//处理@Import注解：@Import(ImportSelector.class/ImportBeanDefinitionRegistrar.class/和普通类.class)
 		processImports(configClass, sourceClass, getImports(sourceClass), true);
 
 		// Process any @ImportResource annotations

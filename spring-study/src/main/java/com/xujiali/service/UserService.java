@@ -1,11 +1,12 @@
 package com.xujiali.service;
 
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 
-@Service
-public class UserService {
+@Component
+public class UserService implements com.xujiali.service.Service {
 	private String str = "hello ";
 	public UserService() {
 		System.out.println("construct...");
@@ -22,5 +23,10 @@ public class UserService {
 
 	public void setStr(String str){
 		this.str = str;
+	}
+
+	@Override
+	public void query() {
+		System.out.println("query...");
 	}
 }

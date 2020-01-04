@@ -57,6 +57,13 @@ import org.springframework.core.type.AnnotationMetadata;
 public interface ImportSelector {
 
 	/**
+	 * 返回一个字符串数组，spring会根据这个数组中的元素去创建对应名称的类的对象
+	 * 如返回一个new String[]{UserService.class.getName()},可以实现动态开启和关闭实例化某些类
+	 * 如有一个类MyImportSelector实现了该接口，返回一些类的名称数组，我们可以定义一个注解，
+	 * 在注解上添加@Import(MyImportSelector.class)，然后在MyImportSelector中判断注解的value是否为true，
+	 * 为true则返回数组，不为true则返回空，然后在配置类中使用该注解开启或关闭实例化这些类
+	 * spring aop底层就是根据这种机制+BeanPostProcessor来实现的
+	 * @Import是在@ComponentScan注解被解析之后紧跟着被解析的
 	 * Select and return the names of which class(es) should be imported based on
 	 * the {@link AnnotationMetadata} of the importing @{@link Configuration} class.
 	 */
