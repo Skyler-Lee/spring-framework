@@ -74,7 +74,9 @@ class ConfigurationClassEnhancer {
 
 	// The callbacks to use. Note that these callbacks must be stateless.
 	private static final Callback[] CALLBACKS = new Callback[] {
+			//增强方法，主要是控制bean的作用域
 			new BeanMethodInterceptor(),
+			//设置一个beanFactory
 			new BeanFactoryAwareMethodInterceptor(),
 			NoOp.INSTANCE
 	};
@@ -95,6 +97,8 @@ class ConfigurationClassEnhancer {
 	 * @return the enhanced subclass
 	 */
 	public Class<?> enhance(Class<?> configClass, @Nullable ClassLoader classLoader) {
+		//判断是否被代理过，被代理的类会实现EnhancedConfiguration接口，被代理过则直接返回
+		//此处可以联系到@Configuration注解的作用
 		if (EnhancedConfiguration.class.isAssignableFrom(configClass)) {
 			if (logger.isDebugEnabled()) {
 				logger.debug(String.format("Ignoring request to enhance %s as it has " +
@@ -106,6 +110,7 @@ class ConfigurationClassEnhancer {
 			}
 			return configClass;
 		}
+		//CGLIB创建代理类，通过构造方法newEnhancer(configClass, classLoader)
 		Class<?> enhancedClass = createClass(newEnhancer(configClass, classLoader));
 		if (logger.isTraceEnabled()) {
 			logger.trace(String.format("Successfully enhanced %s; enhanced class name is: %s",
@@ -119,11 +124,22 @@ class ConfigurationClassEnhancer {
 	 */
 	private Enhancer newEnhancer(Class<?> configSuperClass, @Nullable ClassLoader classLoader) {
 		Enhancer enhancer = new Enhancer();
+		//增强父类，CGLIB是通过继承来实现动态代理的
 		enhancer.setSuperclass(configSuperClass);
+		//增强接口，便于判断，表示一个类已经被增强了
 		enhancer.setInterfaces(new Class<?>[] {EnhancedConfiguration.class});
 		enhancer.setUseFactory(false);
+		/**
+		 * BeanFactoryAwareGeneratorStrategy是一个生成策略，主要为生成的CGLIB类中添加成员变量$$beanFactory，
+		 * 同时基于接口EnhancedConfiguration的父接口BeanFactoryAware中的setBeanFactory()方法，设置此变量的
+		 * 值为当前context中的beanFactory，这样我们这个CGLIB代理的对象就有了一个beanFactory，有了beanFactory
+		 * 就能够获得对象，而不用通过方法获得对象了，因为通过方法获得对象不能控制过程
+		 * 该beanFactory的作用是在this调用时拦截该调用，并直接在beanFactory中获得目标bean
+		 */
 		enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
 		enhancer.setStrategy(new BeanFactoryAwareGeneratorStrategy(classLoader));
+		//设置两个过滤器，BeanMethodInterceptor，BeanFactoryAwareMethodInterceptor,
+		//关键是理解过滤器中的代码
 		enhancer.setCallbackFilter(CALLBACK_FILTER);
 		enhancer.setCallbackTypes(CALLBACK_FILTER.getCallbackTypes());
 		return enhancer;
@@ -315,7 +331,8 @@ class ConfigurationClassEnhancer {
 		@Nullable
 		public Object intercept(Object enhancedConfigInstance, Method beanMethod, Object[] beanMethodArgs,
 					MethodProxy cglibMethodProxy) throws Throwable {
-
+			//enhancedConfigInstance 代理
+			//通过enhancedConfigInstance中的CGLIB生成的成员变量$$beanFactory获取beanFactory
 			ConfigurableBeanFactory beanFactory = getBeanFactory(enhancedConfigInstance);
 			String beanName = BeanAnnotationHelper.determineBeanNameFor(beanMethod);
 
