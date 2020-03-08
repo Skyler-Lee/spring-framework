@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 
 @Component
-public class UserService implements com.xujiali.service.Service {
+public class UserService {
 	private String str = "hello ";
 	public UserService() {
 		System.out.println("construct...");
@@ -25,7 +25,6 @@ public class UserService implements com.xujiali.service.Service {
 		this.str = str;
 	}
 
-	@Override
 	public void query() {
 		System.out.println("query...");
 	}

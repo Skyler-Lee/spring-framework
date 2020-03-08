@@ -198,6 +198,7 @@ final class ConfigurationClass {
 	}
 
 	public void addImportBeanDefinitionRegistrar(ImportBeanDefinitionRegistrar registrar, AnnotationMetadata importingClassMetadata) {
+		//将解析Import(ImportBeanDefinitionRegistrar.class)得到的类放在这个map中
 		this.importBeanDefinitionRegistrars.put(registrar, importingClassMetadata);
 	}
 

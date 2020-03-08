@@ -59,7 +59,7 @@ import org.springframework.lang.Nullable;
 /**
  * Bean的后置处理器，是spring框架提供的一个扩展类点
  * 通过实现BeanPostProcessor接口，程序员就可以插手bean实例化的过程，从而减轻BeanFactory的负担
- * 值得说明的是这个接口可以实现多个，会形成一个列表，然后依次执行
+ * 值得说明的是这个接口可以有多个实现，会形成一个列表，然后依次执行
  * 比如AOP就是通过BeanPostProcessor与IOC建立起联系，在bean实例化期间将切面逻辑织入到bean实例中的
  * （由spring提供的默认的BeanPostProcessor，spring提供了很多默认的BeanPostProcessor）
  * 查看类的关系图可以知道spring提供了一下的默认实现（常用）：

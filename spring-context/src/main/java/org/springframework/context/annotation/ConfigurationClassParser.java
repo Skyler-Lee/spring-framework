@@ -168,6 +168,7 @@ class ConfigurationClassParser {
 			BeanDefinition bd = holder.getBeanDefinition();
 			try {
 				if (bd instanceof AnnotatedBeanDefinition) {
+					//在parse方法中调用解析注解（重要）
 					parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName());
 				}
 				else if (bd instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) bd).hasBeanClass()) {
@@ -696,6 +697,7 @@ class ConfigurationClassParser {
 		if (className.startsWith("java")) {
 			// Never use ASM for core java types
 			try {
+				//反射得到类
 				return new SourceClass(ClassUtils.forName(className,
 						this.resourceLoader.getClassLoader()));
 			}

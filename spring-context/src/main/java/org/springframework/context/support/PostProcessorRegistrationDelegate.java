@@ -94,7 +94,7 @@ final class PostProcessorRegistrationDelegate {
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			//这个地方可以得到一个BeanFactoryPostProcessor（BeanDefinitionRegistryPostProcessor），因为是spring默认在最开始自己注册的
 			//spring工厂需要去解析和扫描等功能，这些功能需要在spring工厂初始化完成之前执行
-			//所有spring在一开始就注册了一个BeanFactoryPostProcessor，用来插手spring工厂的实例化过程
+			//所以spring在一开始就注册了一个BeanFactoryPostProcessor，用来插手spring工厂的实例化过程
 			//这个地方断点可以知道这个类叫ConfigurationClassPostProcessor
 			for (String ppName : postProcessorNames) {
 				if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
@@ -157,7 +157,7 @@ final class PostProcessorRegistrationDelegate {
 			invokeBeanFactoryPostProcessors(beanFactoryPostProcessors, beanFactory);
 		}
 
-		//////一下代码将上面的代码重新执行了一遍
+		//////以下代码将上面的代码重新执行了一遍
 
 		// Do not initialize FactoryBeans here: We need to leave all regular beans
 		// uninitialized to let the bean factory post-processors apply to them!

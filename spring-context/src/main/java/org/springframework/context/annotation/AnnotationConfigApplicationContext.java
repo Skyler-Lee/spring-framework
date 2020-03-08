@@ -65,6 +65,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	public AnnotationConfigApplicationContext() {
 		//this：当前对象，是一个AnnotationConfigRegistry接口的引用
 		this.reader = new AnnotatedBeanDefinitionReader(this);
+		//提供给程序员外部调用该对象进行包的扫描，spring内部扫描包不使用该对象，而是重新new了一个对象
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 
