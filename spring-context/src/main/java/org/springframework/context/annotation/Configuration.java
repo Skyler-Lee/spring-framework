@@ -418,6 +418,10 @@ import org.springframework.stereotype.Component;
  * @see org.springframework.core.env.Environment
  * @see org.springframework.test.context.ContextConfiguration
  */
+
+/**
+ * 被该注解标识的类会被CGLIB代理，做了一些逻辑增强
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

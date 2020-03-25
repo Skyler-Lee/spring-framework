@@ -130,6 +130,7 @@ class ConfigurationClassParser {
 
 	private final ConditionEvaluator conditionEvaluator;
 
+	//将@Import(ImportSelector.class/普通类.class)处理的类放在该map中
 	private final Map<ConfigurationClass, ConfigurationClass> configurationClasses = new LinkedHashMap<>();
 
 	private final Map<String, ConfigurationClass> knownSuperclasses = new HashMap<>();
@@ -250,7 +251,8 @@ class ConfigurationClassParser {
 			sourceClass = doProcessConfigurationClass(configClass, sourceClass);
 		}
 		while (sourceClass != null);
-
+		//将@Import(ImportSelector.class/普通类.class)处理的类放在该map中
+		//configClass中包含了@Import(ImportBeanDefinitionRegistrar.class)解析结果
 		this.configurationClasses.put(configClass, configClass);
 	}
 
@@ -597,7 +599,7 @@ class ConfigurationClassParser {
 						ImportBeanDefinitionRegistrar registrar =
 								ParserStrategyUtils.instantiateClass(candidateClass, ImportBeanDefinitionRegistrar.class,
 										this.environment, this.resourceLoader, this.registry);
-						//将该类放进一个名为importBeanDefinitionRegistrars的map中
+						//将该类放进 configClass对象中一个名为importBeanDefinitionRegistrars的map中
 						configClass.addImportBeanDefinitionRegistrar(registrar, currentSourceClass.getMetadata());
 					}
 					//如果该类只是一个普通类

@@ -854,9 +854,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Trigger initialization of all non-lazy singleton beans...
 		for (String beanName : beanNames) {
+			//---
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+			//不是抽象的、是单例的、也不是懒加载的，就进 if中
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
-				if (isFactoryBean(beanName)) {
+				if (isFactoryBean(beanName)) {  // 判断该 bean是不是一个FactoryBean
+					//如果是factorybean则通过 &+beanName去拿到他
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
 						final FactoryBean<?> factory = (FactoryBean<?>) bean;
@@ -876,6 +879,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					}
 				}
 				else {
+					//如果不是FactoryBean，执行此方法
 					getBean(beanName);
 				}
 			}

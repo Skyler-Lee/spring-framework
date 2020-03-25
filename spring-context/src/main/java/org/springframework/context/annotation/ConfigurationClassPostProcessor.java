@@ -239,6 +239,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 		this.registriesPostProcessed.add(registryId);
 
+		//执行此方法
 		processConfigBeanDefinitions(registry);
 	}
 
@@ -275,6 +276,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
 		//循环所有的beanName，通过beanName获取BeanDefinition，然后将加了注解的BeanDefinition放到list中
+		//这里其实主要拿的是配置类（AppConfig）
 		for (String beanName : candidateNames) {
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
 			//如果BeanDefinition中的configurationClass属性为full或者lite，则意味着已经处理过了，直接跳过
@@ -341,7 +343,14 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			parser.parse(candidates);
 			parser.validate();
 
-			//-------
+			/**
+			 * 在parser.parse(candidates)中已经对配置类进行了解析，包括扫描@ComponentScan注解并将扫描出来的类进行注册，
+			 * 解析@Import的三种情况，但只是将解析结果放入到两个map当中，其中：
+			 * 将@Import(ImportSelector.class/普通类.class)解析结果放入到 ConfigurationClassParser的configurationClasses这个map中
+			 * 将@Import(ImportBeanDefinitionRegistrar.class)解析结果放入到 ConfigurationClass的importBeanDefinitionRegistrars这个map中
+			 */
+			//获取@Import解析结果（Map<ConfigurationClass, ConfigurationClass> configurationClasses）
+			//@Import(ImportBeanDefinitionRegistrar.class)解析结果放在configurationClasses的key对象中的map中
 			Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
 			configClasses.removeAll(alreadyParsed);
 
@@ -352,9 +361,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
 
-
-			//////////////////////////////////////////
-
+			//将@Import解析结果进行注册
 			this.reader.loadBeanDefinitions(configClasses);
 			alreadyParsed.addAll(configClasses);
 

@@ -1,10 +1,9 @@
 package com.xujiali.postprocessor;
 
-import com.xujiali.service.UserService;
+import com.xujiali.service.impl.UserService;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.core.PriorityOrdered;
-import org.springframework.stereotype.Component;
 
 //@Component
 public class UserServiceBeanPostProcessor implements BeanPostProcessor, PriorityOrdered {

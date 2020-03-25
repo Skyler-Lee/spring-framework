@@ -57,7 +57,7 @@ import org.springframework.core.type.AnnotationMetadata;
 public interface ImportSelector {
 
 	/**
-	 * 返回一个字符串数组，spring会根据这个数组中的元素去创建对应名称的类的对象
+	 * 返回一个字符串数组，元素为类的全限定名，spring会根据这个数组中的元素去创建对应名称的类的对象
 	 * 如返回一个new String[]{UserService.class.getName()},可以实现动态开启和关闭实例化某些类
 	 * 如有一个类MyImportSelector实现了该接口，返回一些类的名称数组，我们可以定义一个注解，
 	 * 在注解上添加@Import(MyImportSelector.class)，然后在MyImportSelector中判断注解的value是否为true，

@@ -78,6 +78,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
@@ -548,22 +549,32 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				/////////到这里为止，beanFactory初始化已经完成，以下开始bean的实例化///////////
 
 				// Register bean processors that intercept bean creation.
-				//注册bean的后置处理器
+				//注册bean的后置处理器，这里只是注册，还未执行，这里主要注册了三个后置处理器：
+				//AutowiredAnnotationBeanPostProcessor、CommonAnnotationBeanPostProcessor和BeanPostProcessorChecker
+				//如果开启了AspectJ，这里还会添加自动代理的后置处理器 AnnotationAwareAspectJAutoProxyCreator
 				registerBeanPostProcessors(beanFactory);
 
 				// Initialize message source for this context.
+				//初始化MessageSource对象，不重要
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
+				//不重要，先跳过
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
+				//此版本中没有任何实现
 				onRefresh();
 
 				// Check for listener beans and register them.
+				//注册一些监听
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
+				/**
+				 * 重要！！！实例化所有单例对象，并注册到 singletonObjects中
+				 * 包括执行 BeanPostProcessor，完成AOP代理等等
+				 */
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
@@ -882,6 +893,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// Initialize conversion service for this context.
+		// ConversionService主要是用来做类型转换
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
 				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
 			beanFactory.setConversionService(
@@ -908,6 +920,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.freezeConfiguration();
 
 		// Instantiate all remaining (non-lazy-init) singletons.
+		/**
+		 * 重要！！！做实例化bean的工作。执行 DefaultListableBeanFactory中的方法
+		 */
 		beanFactory.preInstantiateSingletons();
 	}
 
