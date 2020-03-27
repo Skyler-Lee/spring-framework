@@ -137,15 +137,18 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
+		//@Import
 		if (configClass.isImported()) {
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
+		//@Bean
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
 			loadBeanDefinitionsForBeanMethod(beanMethod);
 		}
 
-		//将@Import解析结果注册到spring容器中
+		//xml
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+		//ImportBeanDefinitionRegistrar
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 

@@ -242,12 +242,25 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredType,
 			@Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
 
-		//转换beanName，其实就是对 “&” 做处理
+		//通过name获取beanName，这里不用name直接作为beanName有两个原因：
+		// 1. name可能会以 & 开头，表明调用者想获取FactoryBean本身，而非实现类所创建的bean。
+		//    在BeanFactory中，FactoryBean的实现类和其他类的存放方式是一致的，及<beanName，bean>，
+		//	  beanName中是没有 & 这个字符的，将name的首字符 & 移除，这样才能获取到FactoryBean实例
+		//2. 还是别名的问题，转换需要
 		final String beanName = transformedBeanName(name);
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
 		//从singletonObjects中获取，第一次获取应该为空，因为bean还没有被注册，这里应该是验证bean是否已经被实例化
+		/**
+		 * 这个方法在初始化的时候会调用，在单例池中获取bean调用getBean方法的时候也会调用
+		 * spring在初始化的时候先获取这个对象，判断这个对象是否被实例化好了
+		 * 调试时需要特别注意，需要先进入到applicationConfigAnnotationContext.getBean()之后再断点
+		 * 这里初始化的时候调用一般返回的是 null
+		 * 当bean为原型对象时，第二遍调用getBean("xxx")方法时这里的返回则不会为 null
+		 * ！！！注意这里调用的getSingleton(beanName)与下面调用的getSingleton(beanName)不是同一个方法
+		 * 详细看getSingleton(beanName)中的代码
+		 */
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
@@ -265,12 +278,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		else {
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
-			//判断该bean是否正在创建
+			//如果是原型对象不应该在初始化的时候创建
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
 
 			// Check if bean definition exists in this factory.
+			//当我们设置父工厂时这里才不会为空，一般不会设置父工厂，所以这里一般为空
+			//所以下面的判断不会进
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
@@ -295,15 +310,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// typeCheckOnly 前面传过来为 false，所以这里会进入判断
 			if (!typeCheckOnly) {
 				//将该bean标记为已被创建
-				// 方法中判断该bean是否在alreadyCreated中，没有则添加
+				//方法中判断该bean是否在名为alreadyCreated的set中，没有则添加
 				markBeanAsCreated(beanName);
 			}
 
 			try {
+				//合并父BeanDefinition，现在一般很少用到合并父类
 				final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				//判断当前实例化的bean是否依赖其他bean
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
@@ -323,9 +340,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// Create bean instance.
+				/**
+				 * 创建一个单例对象，这里的getSingleton(beanName, ObjectFactory)方法与之前的getSingleton(beanName)方法不同
+				 * 这里的getSingleton()方法传的第二个参数是一个ObjectFactory对象，后面通过调用该对象的getObject()去创建单例对象
+				 * getObject()方法中调用下面的 createBean(beanName, mbd, args)方法，所以创建单例对象的真正逻辑在这个方法中
+				 */
 				if (mbd.isSingleton()) {
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
+							//真正创建单例对象的逻辑，包括进行依赖注入、执行BeanPostProcessor等
+							//执行的是 AbstractAutowireCapableBeanFactory中的createBean(beanName, mbd, args)方法
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {
@@ -339,6 +363,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
 				}
 
+				//如果是一个原型对象，则在这里进行创建
 				else if (mbd.isPrototype()) {
 					// It's a prototype -> create a new instance.
 					Object prototypeInstance = null;

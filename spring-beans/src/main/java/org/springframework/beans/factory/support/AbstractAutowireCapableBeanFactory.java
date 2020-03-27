@@ -481,11 +481,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (logger.isTraceEnabled()) {
 			logger.trace("Creating instance of bean '" + beanName + "'");
 		}
+		//将BeanDefinition赋值给 mbdToUse，方便后面使用
 		RootBeanDefinition mbdToUse = mbd;
 
 		// Make sure bean class is actually resolved at this point, and
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
+		//这里只是做一下验证，不重要
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
 			mbdToUse = new RootBeanDefinition(mbd);
@@ -493,6 +495,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// Prepare method overrides.
+		//处理lookup-method和replace-method配置，spring将这两个配置统称为 method overrides
 		try {
 			mbdToUse.prepareMethodOverrides();
 		}
@@ -503,6 +506,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
+			/**
+			 * 在bean初始化之前应用后置处理，如果后置处理返回的bean不为空，则直接返回，
+			 * 如果在这里被返回了，则spring不会去维护bean中的任何依赖，这里主要是处理实现了
+			 * InstantiationAwareBeanPostProcessor的bean后置处理器，这个后置处理器是spring内部自己使用，
+			 * 一般不会开放使用，这里一般来说返回的bean是一个空对象，创建bean是通过后面的逻辑
+			 */
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
 				return bean;
@@ -514,6 +523,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			// 执行 doCreateBean来创建bean
 			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Finished creating instance of bean '" + beanName + "'");
@@ -549,11 +559,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			throws BeanCreationException {
 
 		// Instantiate the bean.
+		// BeanWrapper用来包装bean，可以通过 getWrappedInstance()方法获取被包装的对象
 		BeanWrapper instanceWrapper = null;
 		if (mbd.isSingleton()) {
+			//根据beanName从 factoryBeanInstanceCache中取出，factoryBeanInstanceCache.size=0，所以 instanceWrapper为null
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
+			// 创建bean实例，在这里得到一个单例对象
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		final Object bean = instanceWrapper.getWrappedInstance();
@@ -591,7 +604,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
+			//进行依赖注入
 			populateBean(beanName, mbd, instanceWrapper);
+			//执行BeanPostProcessor，aop就是在这里完成的
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -1163,6 +1178,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Make sure bean class is actually resolved at this point.
 		Class<?> beanClass = resolveBeanClass(mbd, beanName);
 
+		//检测一个类的访问权限，spring默认情况下对于非public的类时允许访问的
 		if (beanClass != null && !Modifier.isPublic(beanClass.getModifiers()) && !mbd.isNonPublicAccessAllowed()) {
 			throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 					"Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
@@ -1173,15 +1189,25 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
 
+		//如果工厂方法不为空，则通过工厂方法构建bean对象，返回的bean是通过factory-method返回的对象
+		//demo：在xml中配置指定一个类的factory-method，在该类中声明指定的工厂方法，则通过该类获取bean时会返回工厂方法产生的bean
+		//而该类本身的bean则不会被创建，这里区分一下factory-method与FactoryBean的区别
 		if (mbd.getFactoryMethodName() != null) {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
 
 		// Shortcut when re-creating the same bean...
+		/**
+		 * 通过上面的英文注释可以知道这是一个Shortcut，当多次构建同一个bean时，可以使用这个Shortcut
+		 * 也就是说不再需要每次推断应该使用哪种方式构建bean，比如在多次构建同一个prototype类型的bean时，
+		 * 就可以走此处的Shortcut，这里的 resolved 和 mbd.constructorArgumentsResolved 将会在bean第一次
+		 *初始化的过程中被设置，后面证明
+		 */
 		boolean resolved = false;
 		boolean autowireNecessary = false;
-		if (args == null) {
+		if (args == null) {  //单例对象这里不会进
 			synchronized (mbd.constructorArgumentLock) {
+				//如果已经解析了构造方法的参数，则必须要通过一个带参构造方法来实例化
 				if (mbd.resolvedConstructorOrFactoryMethod != null) {
 					resolved = true;
 					autowireNecessary = mbd.constructorArgumentsResolved;
@@ -1190,14 +1216,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		if (resolved) {
 			if (autowireNecessary) {
+				//通过构造方法自动装配的方式来构造bean对象
 				return autowireConstructor(beanName, mbd, null, null);
 			}
 			else {
+				//通过默认的无参构造方法进行
 				return instantiateBean(beanName, mbd);
 			}
 		}
 
 		// Candidate constructors for autowiring?
+		//由后置处理器决定返回哪些构造方法，如果类中有无参构造方法或者无构造方法，这里返回null
+		//如果只有有参数的构造方法，这里返回该构造方法对象
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
@@ -1211,6 +1241,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// No special handling: simply use no-arg constructor.
+		//使用无参构造方法实例化bean
 		return instantiateBean(beanName, mbd);
 	}
 
@@ -1303,14 +1334,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		try {
 			Object beanInstance;
 			final BeanFactory parent = this;
+			//这里不会进
 			if (System.getSecurityManager() != null) {
 				beanInstance = AccessController.doPrivileged((PrivilegedAction<Object>) () ->
 						getInstantiationStrategy().instantiate(mbd, beanName, parent),
 						getAccessControlContext());
 			}
 			else {
+				/**
+				 * getInstantiationStrategy()获得一个实例化bean的策略，默认是 SimpleInstantiationStrategy
+				 * instantiate(mbd, beanName, parent)根据构造方法反射创建类？？？
+				 */
 				beanInstance = getInstantiationStrategy().instantiate(mbd, beanName, parent);
 			}
+			//包装bean实例
 			BeanWrapper bw = new BeanWrapperImpl(beanInstance);
 			initBeanWrapper(bw);
 			return bw;

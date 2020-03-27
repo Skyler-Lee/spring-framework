@@ -850,11 +850,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		//获取所有bean的名字
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
+		//触发所有非延迟加载单例bean的初始化，主要步骤为调用getBean()
 		for (String beanName : beanNames) {
-			//---
+			//合并父BeanDefinition，现在一般很少用到合并父类
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
 			//不是抽象的、是单例的、也不是懒加载的，就进 if中
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
