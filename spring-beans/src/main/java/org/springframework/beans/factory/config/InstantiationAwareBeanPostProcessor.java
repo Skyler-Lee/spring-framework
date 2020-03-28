@@ -43,6 +43,9 @@ import org.springframework.lang.Nullable;
  * @since 1.2
  * @see org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator#setCustomTargetSourceCreators
  * @see org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator
+ *
+ * 实现这个接口，可以在bean实例化时做一些操作，也可以在bean的依赖注入时做一些操作，
+ * 同时可以在bean初始化的前后做一些操作，实现了本接口中的方法的作用在下面接口上面的注释说明，请看注释
  */
 public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
@@ -69,6 +72,8 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @see #postProcessAfterInstantiation
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getBeanClass()
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getFactoryMethodName()
+	 *
+	 * 实现了这个方法并返回bean，则spring在实例化的时候会直接拿到这里返回的bean，而不再通过构造方法去实例化
 	 */
 	@Nullable
 	default Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
@@ -89,6 +94,8 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * instances being invoked on this bean instance.
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see #postProcessBeforeInstantiation
+	 *
+	 * 实现了这个方法并返回false，则spring在进行依赖注入的时候直接执行此方法，不会再进行依赖注入
 	 */
 	default boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
 		return true;
@@ -111,6 +118,8 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @since 5.1
 	 * @see #postProcessPropertyValues
+	 *
+	 * 实现这个方法，则spring在进行依赖注入的时候会获取这里的属性值，然后在bean中应用这些属性值
 	 */
 	@Nullable
 	default PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName)
@@ -138,6 +147,9 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @see #postProcessProperties
 	 * @see org.springframework.beans.MutablePropertyValues
 	 * @deprecated as of 5.1, in favor of {@link #postProcessProperties(PropertyValues, Object, String)}
+	 *
+	 * 实现这个方法，则spring在进行依赖注入的时候，当postProcessProperties(PropertyValues pvs, Object bean, String beanName)
+	 * 返回空时，会获取这里的属性值，然后在bean中应用这些属性值
 	 */
 	@Deprecated
 	@Nullable

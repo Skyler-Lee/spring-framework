@@ -167,10 +167,12 @@ class ConstructorResolver {
 			// Take specified constructors, if any.
 			//如果没有已解析的构造方法，则使用传进来的构造方法进行解析
 			Constructor<?>[] candidates = chosenCtors;
-			//如果传进来的构造方法为空，则直接通过BeanDefinition中的class去获取构造方法
+			//如果传进来的构造方法为空（类中有多个带参数的构造方法，没有无参构造方法），
+			// 则直接通过BeanDefinition中的class去获取构造方法
 			if (candidates == null) {
 				Class<?> beanClass = mbd.getBeanClass();
 				try {
+					//获取所有带参数的构造方法
 					candidates = (mbd.isNonPublicAccessAllowed() ?
 							beanClass.getDeclaredConstructors() : beanClass.getConstructors());
 				}
@@ -222,8 +224,12 @@ class ConstructorResolver {
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
 
-			//对构造方法进行排序，这个方法会将构造方法
-			// 按访问权限public-->private进行排序，按参数列表长度长-->短进行排序
+			/**
+			 * 对构造方法进行排序，这个方法会将构造方法
+			 * 按访问权限public-->private进行排序，按参数列表长度长-->短进行排序，如：
+			 * public Constructors(Object o1, Object o2, Object o3)
+			 * public Constructors(Object o1, Object o2)
+			 */
 			AutowireUtils.sortConstructors(candidates);
 			//定义了一个最小类型差异变量，这个变量很有分量，后面有解释
 			int minTypeDiffWeight = Integer.MAX_VALUE;
@@ -232,11 +238,16 @@ class ConstructorResolver {
 			//构造方法参数值不满足参数列表时发生异常进行存储
 			LinkedList<UnsatisfiedDependencyException> causes = null;
 
-			//循环所有构造方法，进行解析
+			//循环所有构造方法，进行解析，确定使用哪个构造函数进行实例化
 			for (Constructor<?> candidate : candidates) {
 				//获取构造方法参数列表的参数个数
 				int parameterCount = candidate.getParameterCount();
-				//constructorToUse、argsToUse 这些此时依旧为空
+				/**
+				 * 如果constructorToUse不为空，说明已经有一个构造函数满足实例化要求了，此时如果要被用来实例化的
+				 * 构造函数的参数列表值的长度大于正在解析的构造函数的参数列表长度，则直接跳出循环，不用再进行解析了
+				 * 因为之前已经对所有构造函数进行了一次排序，用来实例化的构造函数的参数列表长度应该为 argsToUse.length，
+				 * 而当前解析的构造函数的参数列表长度比这个值还小，说明后面的构造函数都不满足要求了
+				 */
 				if (constructorToUse != null && argsToUse != null && argsToUse.length > parameterCount) {
 					// Already found greedy constructor that can be satisfied ->
 					// do not look any further, there are only less greedy constructors left.

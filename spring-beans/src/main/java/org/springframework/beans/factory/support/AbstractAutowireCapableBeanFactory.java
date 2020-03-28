@@ -510,6 +510,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			 * 在bean初始化之前应用后置处理，如果后置处理返回的bean不为空，则直接返回，
 			 * 如果在这里被返回了，则spring不会去维护bean中的任何依赖，这里主要是处理实现了
 			 * InstantiationAwareBeanPostProcessor的bean后置处理器，这个后置处理器是spring内部自己使用，
+			 * 这个后置处理器中有很多个方法，这里执行的是 postProcessBeforeInstantiation() 和
+			 * postProcessAfterInitialization()这两个方法，当然方法返回值需要是bean这里才会有值。
 			 * 一般不会开放使用，这里一般来说返回的bean是一个空对象，创建bean是通过后面的逻辑
 			 */
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
@@ -1242,8 +1244,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// Candidate constructors for autowiring?
-		//由后置处理器决定返回哪些构造方法，如果类中有无参构造方法或者没有构造方法，这里返回null
-		//如果只有一个有参数的构造方法，这里返回该构造方法对象，！！！其他情况还没弄清楚！！！
+		/**
+		 * 由后置处理器决定返回哪些构造方法，如果类中有无参构造方法或者没有构造方法，这里返回null
+		 * 如果只有一个有参数的构造方法，这里返回该构造方法对象，
+		 * 如果类中有多个有参数的构造方法，这里依旧返回null，因为spring不知道要使用哪个构造方法去实例化
+		 * 但有多个有参数的构造方法时，spring依旧会通过自动注入构造方法的方式实例化bean
+		 * ！！！其他情况还没弄清楚！！！
+		 */
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
@@ -1436,7 +1443,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
 		//判断是否有实现了 InstantiationAwareBeanPostProcessor 的后置处理器，这个后置处理器可以在bean属性注入之前做一些操作
-		//如果在postProcessAfterInstantiation()方法中返回false，则不再进行后面的属性注入
+		//这里执行的是postProcessAfterInstantiation()这个方法，如果在该方法中返回false，则不再进行后面的属性注入
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
@@ -1495,6 +1502,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					//如果实现了 InstantiationAwareBeanPostProcessor，执行postProcessProperties()获取属性值
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+					/**
+					 * 这里主要执行的是 CommonAnnotationBeanPostProcessor 和 AutowiredAnnotationPostprocessor 中的方法
+					 * 其中，CommonAnnotationBeanPostProcessor 主要是对@PostConstruct、@Resource等注解做处理
+					 * AutowiredAnnotationPostprocessor 主要是对@Autowired注解做处理
+					 * ！！！依赖注入就是在这里面完成的！！！包括循环依赖！！！
+					 */
 					PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
 					if (pvsToUse == null) {
 						if (filteredPds == null) {
