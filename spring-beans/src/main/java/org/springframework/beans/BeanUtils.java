@@ -180,14 +180,19 @@ public abstract class BeanUtils {
 	public static <T> T instantiateClass(Constructor<T> ctor, Object... args) throws BeanInstantiationException {
 		Assert.notNull(ctor, "Constructor must not be null");
 		try {
+			//将构造函数设置为 accessible
 			ReflectionUtils.makeAccessible(ctor);
+			//判断是否是Kotlin之类的，这里不会进
 			if (KotlinDetector.isKotlinReflectPresent() && KotlinDetector.isKotlinType(ctor.getDeclaringClass())) {
 				return KotlinDelegate.instantiateClass(ctor, args);
 			}
 			else {
+				//获取构造函数的参数
 				Class<?>[] parameterTypes = ctor.getParameterTypes();
 				Assert.isTrue(args.length <= parameterTypes.length, "Can't specify more arguments than constructor parameters");
+				//用来存储构造方法的参数值
 				Object[] argsWithDefaultValues = new Object[args.length];
+				//循环构造方法参数，并取出参数值
 				for (int i = 0 ; i < args.length; i++) {
 					if (args[i] == null) {
 						Class<?> parameterType = parameterTypes[i];
@@ -197,6 +202,7 @@ public abstract class BeanUtils {
 						argsWithDefaultValues[i] = args[i];
 					}
 				}
+				//通过反射实例化对象，java反射的知识
 				return ctor.newInstance(argsWithDefaultValues);
 			}
 		}

@@ -60,23 +60,29 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
+		//是否有method overrides（lookup-method或replace-method）
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
 			synchronized (bd.constructorArgumentLock) {
+				//第一次进来 bd.resolvedConstructorOrFactoryMethod为空
 				constructorToUse = (Constructor<?>) bd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse == null) {
+					//从BeanDefinition中拿到要实例化对象的类类型
 					final Class<?> clazz = bd.getBeanClass();
 					if (clazz.isInterface()) {
 						throw new BeanInstantiationException(clazz, "Specified class is an interface");
 					}
 					try {
+						//spring验证，这里一般不会进
 						if (System.getSecurityManager() != null) {
 							constructorToUse = AccessController.doPrivileged(
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
 						}
 						else {
+							//得到类中默认的构造函数（无参构造函数）
 							constructorToUse = clazz.getDeclaredConstructor();
 						}
+						//将构造函数对象赋值给 bd.resolvedConstructorOrFactoryMethod
 						bd.resolvedConstructorOrFactoryMethod = constructorToUse;
 					}
 					catch (Throwable ex) {
@@ -84,6 +90,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 					}
 				}
 			}
+			//根据构造函数实例化对象
 			return BeanUtils.instantiateClass(constructorToUse);
 		}
 		else {
@@ -106,6 +113,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
 			final Constructor<?> ctor, Object... args) {
 
+		//如果没有 lookup-method 和 replace-method
 		if (!bd.hasMethodOverrides()) {
 			if (System.getSecurityManager() != null) {
 				// use own privileged to change accessibility (when security is on)
@@ -117,6 +125,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 			return BeanUtils.instantiateClass(ctor, args);
 		}
 		else {
+			//如果有 lookup-method 和 replace-method,会通过CGLIB进行增强
 			return instantiateWithMethodInjection(bd, beanName, owner, ctor, args);
 		}
 	}
