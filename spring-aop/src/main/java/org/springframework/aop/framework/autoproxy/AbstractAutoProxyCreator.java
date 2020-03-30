@@ -294,7 +294,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
+			//判断该bean是不是 FactoryBean类型，如果是则返回 &+beanName，否则直接返回beanName
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			//通过 beanName从 earlyProxyReferences这个map中取出一个bean并判断是否等于当前这个bean
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
@@ -315,10 +317,13 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @return the cache key for the given class and name
 	 */
 	protected Object getCacheKey(Class<?> beanClass, @Nullable String beanName) {
+		//如果beanName不为空
 		if (StringUtils.hasLength(beanName)) {
+			//判断该bean是否为 FactoryBean类型，如果是，则返回 &+beanName，否则返回beanName
 			return (FactoryBean.class.isAssignableFrom(beanClass) ?
 					BeanFactory.FACTORY_BEAN_PREFIX + beanName : beanName);
 		}
+		//如果beanName为空，直接返回该 bean
 		else {
 			return beanClass;
 		}
@@ -335,6 +340,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
+		//如果 this.advisedBeans.get(cacheKey)=false，说明已经处理过并且没有代理逻辑，直接返回
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
@@ -344,6 +350,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		}
 
 		// Create proxy if we have advice.
+		///////如果有增强逻辑则创建代理，最终返回一个代理类///////
+		//获取增强逻辑
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
@@ -352,7 +360,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			this.proxyTypes.put(cacheKey, proxy.getClass());
 			return proxy;
 		}
-
+		//如果没有增强逻辑，设置 this.advisedBeans.put(cacheKey, Boolean.FALSE)，表明已经处理过，并且不需要代理
 		this.advisedBeans.put(cacheKey, Boolean.FALSE);
 		return bean;
 	}

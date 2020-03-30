@@ -97,13 +97,15 @@ public abstract class AopConfigUtils {
 	public static BeanDefinition registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
 
+		//注册或升级 AnnotationAwareAspectJAutoProxyCreator 这个后置处理器
 		return registerOrEscalateApcAsRequired(AnnotationAwareAspectJAutoProxyCreator.class, registry, source);
 	}
 
 	public static void forceAutoProxyCreatorToUseClassProxying(BeanDefinitionRegistry registry) {
+		//获取自动创建代理的后置处理器，并将属性 exposeProxy 设置为 true
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition definition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
-			definition.getPropertyValues().add("proxyTargetClass", Boolean.TRUE);
+			definition.getPropertyValues().add("exposeProxy", Boolean.TRUE);
 		}
 	}
 
@@ -120,21 +122,31 @@ public abstract class AopConfigUtils {
 
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 
+		//判断 beanDefinitionMap中是否存在创建自动代理的后置处理器
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
+			//如果存在，获取已有的自动代理后置处理器
 			BeanDefinition apcDefinition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
+			//如果已有的后置处理器与当前要注册的后置处理器不是同一个
 			if (!cls.getName().equals(apcDefinition.getBeanClassName())) {
+				//获取已有的后置处理器的优先级
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName());
+				//获取当前要注册的后置处理器的优先级
 				int requiredPriority = findPriorityForClass(cls);
+				//已有的后置处理器的优先级 小于 当前要注册的后置处理器的优先级
 				if (currentPriority < requiredPriority) {
+					//更新后置处理器为当前要注册的后置处理器
 					apcDefinition.setBeanClassName(cls.getName());
 				}
 			}
 			return null;
 		}
 
+		///////如果 beanDefinitionMap中不存在创建自动代理的后置处理器///////////////
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(cls);
-		beanDefinition.setSource(source);
+		beanDefinition.setSource(source);  //source == null
+		//通过 order 属性进行排序，Ordered.HIGHEST_PRECEDENCE 为Integer.MIN_VALUE，表示该后置处理器最后执行
 		beanDefinition.getPropertyValues().add("order", Ordered.HIGHEST_PRECEDENCE);
+		//----------BeanDefinition.ROLE_INFRASTRUCTURE = 2
 		beanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 		registry.registerBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME, beanDefinition);
 		return beanDefinition;

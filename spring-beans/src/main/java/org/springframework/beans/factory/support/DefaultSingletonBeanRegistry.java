@@ -238,6 +238,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				}
 				try {
 					//单例对象在这个时候被创建
+					// 这里返回的是一个创建完成的 bean，下面将这个 bean注册到单例池中
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				}

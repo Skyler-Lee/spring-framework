@@ -30,6 +30,9 @@ package org.springframework.beans.factory;
  * @see DisposableBean
  * @see org.springframework.beans.factory.config.BeanDefinition#getPropertyValues()
  * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getInitMethodName()
+ *
+ * 实现该接口并实现 afterPropertiesSet()方法，可以在bean执行初始化方法(init-method)之前执行 afterPropertiesSet()方法中的逻辑
+ * afterPropertiesSet()方法是紧跟在 BeanPostProcessor 的 postProcessBeforeInitialization()方法之后执行的
  */
 public interface InitializingBean {
 

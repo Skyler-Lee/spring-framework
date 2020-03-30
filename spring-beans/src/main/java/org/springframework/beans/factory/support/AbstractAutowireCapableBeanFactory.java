@@ -412,8 +412,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			throws BeansException {
 
 		Object result = existingBean;
+		/**
+		 * 循环所有的后置处理器，这类主要是 CommonAnnotationBeanPostProcessor 对 @PostConstruct 注解的处理
+		 */
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
 			Object current = processor.postProcessBeforeInitialization(result, beanName);
+			//如果每次执行后置处理器后返回的bean为null，则返回原先的bean对象，否则返回执行后置处理器后返回的bean对象
+			//所以在后置处理器中即使返回 null，不会影响这个bean
 			if (current == null) {
 				return result;
 			}
@@ -427,6 +432,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			throws BeansException {
 
 		Object result = existingBean;
+		//如果开启了AOP，关键看 AnnotationAwareAspectJAutoProxyCreator 这个后置处理器中的postProcessAfterInitialization()方法
+		//这个后置处理器的postProcessAfterInitialization()方法是在其父类 AbstractAutoProxyCreator 中实现的
+		//另外一个是 CommonAnnotationBeanPostProcessor 处理 @Predestroy 注解
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
 			Object current = processor.postProcessAfterInitialization(result, beanName);
 			if (current == null) {
@@ -637,7 +645,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			 * 进行依赖注入，解决循环依赖
 			 */
 			populateBean(beanName, mbd, instanceWrapper);
-			//执行BeanPostProcessor，aop就是在这里完成的
+			/**
+			 * 初始化bean，执行BeanPostProcessor，aop就是在这里完成的
+			 */
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -1887,15 +1897,21 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}, getAccessControlContext());
 		}
 		else {
+			//判断bean是否实现了 Aware 接口，如果实现了，按照实现的类型设置相关的值
 			invokeAwareMethods(beanName, bean);
 		}
 
+		//将对象赋值给 wrappedBean
 		Object wrappedBean = bean;
+		//如果 BeanDefinition为空 或者 this.synthetic 为false，this.synthetic默认为false，条件满足
 		if (mbd == null || !mbd.isSynthetic()) {
+			//执行BeanPostProcessor中的 postProcessBeforeInitialization()方法，wrappedBean 接收执行后返回的值
+			//CommonAnnotationBeanPostProcessor 处理 @PostConstruct 注解
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
 		try {
+			//执行初始化方法，主要是实现了 InitializingBean 的afterPropertiesSet() 和指定的 init-method
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {
@@ -1904,6 +1920,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					beanName, "Invocation of init method failed", ex);
 		}
 		if (mbd == null || !mbd.isSynthetic()) {
+			/**
+			 * 执行BeanPostProcessor中的 postProcessAfterInitialization()方法，wrappedBean 接收执行后返回的对象
+			 * ！！！AOP 就是在这一步完成的
+			 * 如果通过 @EnableAspectJAutoProxy 注解开启了aop，spring会将 AnnotationAwareAspectJAutoProxyCreator这个
+			 * 后置处理器添加进来，通过这个后置处理器的 postProcessAfterInitialization()方法完成代理，然后返回一个代理对象
+			 *
+			 * CommonAnnotationBeanPostProcessor 处理 @Predestroy 注解
+			 */
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 
@@ -1942,7 +1966,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected void invokeInitMethods(String beanName, final Object bean, @Nullable RootBeanDefinition mbd)
 			throws Throwable {
 
+		//判断bean是否实现了 InitializingBean 接口
 		boolean isInitializingBean = (bean instanceof InitializingBean);
+		//如果实现了 InitializingBean 接口并且实现了 afterPropertiesSet()方法，则先执行该方法
 		if (isInitializingBean && (mbd == null || !mbd.isExternallyManagedInitMethod("afterPropertiesSet"))) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Invoking afterPropertiesSet() on bean with name '" + beanName + "'");
@@ -1959,15 +1985,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				}
 			}
 			else {
+				//执行InitializingBean接口中的方法
 				((InitializingBean) bean).afterPropertiesSet();
 			}
 		}
 
 		if (mbd != null && bean.getClass() != NullBean.class) {
+			//获取 bean中的初始化方法名称，可以通过 init-method 执行
 			String initMethodName = mbd.getInitMethodName();
-			if (StringUtils.hasLength(initMethodName) &&
-					!(isInitializingBean && "afterPropertiesSet".equals(initMethodName)) &&
-					!mbd.isExternallyManagedInitMethod(initMethodName)) {
+			if (StringUtils.hasLength(initMethodName) &&  //初始化方法不为空
+					!(isInitializingBean && "afterPropertiesSet".equals(initMethodName)) &&  //没有实现InitializingBean接口或初始化方法不是afterPropertiesSet
+					!mbd.isExternallyManagedInitMethod(initMethodName)) {  //非外部管理的初始化方法
+				//满足以上条件，则执行
 				invokeCustomInitMethod(beanName, bean, mbd);
 			}
 		}
