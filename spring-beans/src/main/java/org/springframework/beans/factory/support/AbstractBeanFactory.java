@@ -253,10 +253,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Eagerly check singleton cache for manually registered singletons.
 		//从singletonObjects中获取，第一次获取应该为空，因为bean还没有被注册，这里应该是验证bean是否已经被实例化
 		/**
-		 * 这个方法在初始化的时候会调用，在单例池中获取bean调用getBean方法的时候也会调用
-		 * spring在初始化的时候先获取这个对象，判断这个对象是否被实例化好了
-		 * 调试时需要特别注意，需要先进入到applicationConfigAnnotationContext.getBean()之后再断点
-		 * 这里初始化的时候调用一般返回的是 null
+		 * 这个方法在实例化的时候会调用，在进行依赖注入的时候会调用，在单例池中获取bean调用getBean方法的时候也会调用
+		 * spring在实例化的时候先获取这个对象，判断这个对象是否被实例化好了，这里实例化的时候调用一般返回的是 null
 		 * 当bean为原型对象时，第二遍调用getBean("xxx")方法时这里的返回则不会为 null
 		 * ！！！注意这里调用的getSingleton(beanName)与下面调用的getSingleton(beanName)不是同一个方法
 		 * 详细看getSingleton(beanName)中的代码
@@ -274,11 +272,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
-		//实际上走的是else中的逻辑
+		//实例化时实际上走的是else中的逻辑
+		// 依赖注入时当依赖的bean还没有创建或还没有正在被创建
 		else {
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
-			//如果是原型对象不应该在初始化的时候创建
+			//如果是原型对象不应该在实例化的时候创建
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}

@@ -245,7 +245,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		//获取需要进行依赖注入的属性元数据
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
+		//对进行依赖注入的属性进行核对检查
 		metadata.checkConfigMembers(beanDefinition);
 	}
 
@@ -396,8 +398,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		//获取需要进行依赖注入的属性元数据，这里主要是从缓存中map中拿到的
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
+			//进行依赖注入的操作
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (BeanCreationException ex) {
@@ -443,9 +447,18 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	private InjectionMetadata findAutowiringMetadata(String beanName, Class<?> clazz, @Nullable PropertyValues pvs) {
 		// Fall back to class name as cache key, for backwards compatibility with custom callers.
+		//将beanName作为key
 		String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
 		// Quick check on the concurrent map first, with minimal locking.
+		/**
+		 * 先从缓存中取出需要进行依赖注入的元数据，在调用populateBean()方法前会先执行 MergedBeanDefinitionPostProcessor
+		 * 这个后置处理器获取一遍依赖注入的元数据，然后放在 injectionMetadataCache 这个map中，如果这是后置处理器调进来的，
+		 * 那么从缓存中取出来的应该为空，然后通过  buildAutowiringMetadata(clazz)去获取需要进行依赖注入的元数据，然后放进
+		 * 缓存中，在进行依赖注入时执行 populateBean()进来时直接从 injectionMetadataCache 这个map中拿到值然后直接返回
+		 */
 		InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
+		//判断是否需要更新元数据对象，里面其实就是判断 metadata 是否为空或者 metadata 的目标对象是否是当前这个bean
+		// return (metadata == null || metadata.targetClass != clazz);
 		if (InjectionMetadata.needsRefresh(metadata, clazz)) {
 			synchronized (this.injectionMetadataCache) {
 				metadata = this.injectionMetadataCache.get(cacheKey);
@@ -453,7 +466,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 					if (metadata != null) {
 						metadata.clear(pvs);
 					}
+					// 构建自动注入的元数据
 					metadata = buildAutowiringMetadata(clazz);
+					//将获取到的元数据放在 injectionMetadataCache 这个map中
 					this.injectionMetadataCache.put(cacheKey, metadata);
 				}
 			}
@@ -462,17 +477,23 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	}
 
 	private InjectionMetadata buildAutowiringMetadata(final Class<?> clazz) {
+		//如果bean中没有 @Autowired 或者 @Value这两个注解，注解返回空的元数据对象
 		if (!AnnotationUtils.isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
 			return InjectionMetadata.EMPTY;
 		}
 
+		//存储需要进行依赖注入的属性元数据
 		List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
 		Class<?> targetClass = clazz;
 
 		do {
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
 
+			//获取需要自动注入的属性，并将其进行封装，这里主要是获取加了@Autowired或@Value这两个注解的属性
+			//doWithLocalFields()方法中通过反射获取类中所有的属性数据，并循环解析
 			ReflectionUtils.doWithLocalFields(targetClass, field -> {
+				//findAutowiredAnnotation(field)中主要是判断当前属性是否加了@Autowired或@Value
+				//如果加了，则返回一个注解对象，如果没有，则返回空
 				MergedAnnotation<?> ann = findAutowiredAnnotation(field);
 				if (ann != null) {
 					if (Modifier.isStatic(field.getModifiers())) {
@@ -481,11 +502,15 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						}
 						return;
 					}
+					//判断属性是否是必须注入的
 					boolean required = determineRequiredStatus(ann);
+					//将属性数据暂存到currElements中
 					currElements.add(new AutowiredFieldElement(field, required));
 				}
 			});
 
+			//获取需要自动注入的方法，并将其进行封装，这里主要是获取加了@Autowired或@Value这两个注解的属性
+			//这里基本同获取属性一致，这里不再累述
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
@@ -511,17 +536,21 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 				}
 			});
 
+			//存储数据
 			elements.addAll(0, currElements);
+			//继续检查父类是否需要进行依赖注入
 			targetClass = targetClass.getSuperclass();
 		}
 		while (targetClass != null && targetClass != Object.class);
 
+		//将所有需要进行依赖注入的属性元数据进行封装并返回
 		return InjectionMetadata.forElements(elements, clazz);
 	}
 
 	@Nullable
 	private MergedAnnotation<?> findAutowiredAnnotation(AccessibleObject ao) {
 		MergedAnnotations annotations = MergedAnnotations.from(ao);
+		//autowiredAnnotationTypes 有两种类型：@Autowired 或 @Value
 		for (Class<? extends Annotation> type : this.autowiredAnnotationTypes) {
 			MergedAnnotation<?> annotation = annotations.get(type);
 			if (annotation.isPresent()) {
@@ -627,28 +656,37 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 		@Override
 		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+			//获取要进行注入的属性
 			Field field = (Field) this.member;
 			Object value;
 			if (this.cached) {
 				value = resolvedCachedArgument(beanName, this.cachedFieldValue);
 			}
 			else {
+				//将属性信息进行封装
 				DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
 				desc.setContainingClass(bean.getClass());
+				//存储可以作为值对属性进行注入的bean名称
 				Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
 				Assert.state(beanFactory != null, "No BeanFactory available");
 				TypeConverter typeConverter = beanFactory.getTypeConverter();
 				try {
+					//解析依赖，获取到一个用来进行依赖注入的对象，并将符合依赖注入的对象的banName防在 autowiredBeanNames 这个列表中
 					value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
 				}
 				catch (BeansException ex) {
 					throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(field), ex);
 				}
 				synchronized (this) {
+					//如果缓存标志为 false，意思是当前匹配的依赖注入对象还没有进行缓存
 					if (!this.cached) {
+						//只有获取到了被用来依赖注入的对象或者属性为必须注入的情况才进行缓存
 						if (value != null || this.required) {
+							//存储当前属性的相关描述
 							this.cachedFieldValue = desc;
+							//将当前的bean和需要注入的属性的依赖关系存储到 dependentBeanMap 中
 							registerDependentBeans(beanName, autowiredBeanNames);
+							//如果匹配的依赖注入的对象只有一个，更新 cachedFieldValue 的值
 							if (autowiredBeanNames.size() == 1) {
 								String autowiredBeanName = autowiredBeanNames.iterator().next();
 								if (beanFactory.containsBean(autowiredBeanName) &&
@@ -661,12 +699,15 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						else {
 							this.cachedFieldValue = null;
 						}
+						//更新缓存标志，表示已经将当前匹配的依赖注入对象进行缓存
 						this.cached = true;
 					}
 				}
 			}
 			if (value != null) {
+				//设置为可操作，java反射的知识
 				ReflectionUtils.makeAccessible(field);
+				//属性填充
 				field.set(bean, value);
 			}
 		}

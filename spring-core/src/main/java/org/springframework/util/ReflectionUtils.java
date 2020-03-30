@@ -663,6 +663,7 @@ public abstract class ReflectionUtils {
 	 * @see #doWithFields
 	 */
 	public static void doWithLocalFields(Class<?> clazz, FieldCallback fc) {
+		//通过反射获取出类中所有的属性，循环解析
 		for (Field field : getDeclaredFields(clazz)) {
 			try {
 				fc.doWith(field);

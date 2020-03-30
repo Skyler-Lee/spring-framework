@@ -1206,10 +1206,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		else if (javaxInjectProviderClass == descriptor.getDependencyType()) {
 			return new Jsr330Factory().createDependencyProvider(descriptor, requestingBeanName);
 		}
+		//前面是对依赖类型的一些判断，一般不会进
 		else {
 			Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(
 					descriptor, requestingBeanName);
 			if (result == null) {
+				//解析依赖的逻辑，方法中最终返回一个用来进行依赖注入的对象，并将符合的beanName放在 autowiredBeanNames 这个列表中
 				result = doResolveDependency(descriptor, requestingBeanName, autowiredBeanNames, typeConverter);
 			}
 			return result;
@@ -1226,8 +1228,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			if (shortcut != null) {
 				return shortcut;
 			}
-
+			//获取属性的类类型
 			Class<?> type = descriptor.getDependencyType();
+			//这里获取的 value 为空
 			Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
 			if (value != null) {
 				if (value instanceof String) {
@@ -1248,11 +1251,17 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 			}
 
+			//这里获取的 multipleBeans 为空
 			Object multipleBeans = resolveMultipleBeans(descriptor, beanName, autowiredBeanNames, typeConverter);
 			if (multipleBeans != null) {
 				return multipleBeans;
 			}
 
+			/**
+			 * 寻找可以用来自动注入的候选对象，这里会先根据属性的类型去获取符合的bean的名称列表，
+			 * 然后根据这些符合的beanName通过beanFactory.getBean(beanName)拿到对应的bean，再将
+			 * 这些符合的bean放在一个map集合中返回，matchingBeans 用来接收这些匹配的 bean
+			 */
 			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
 			if (matchingBeans.isEmpty()) {
 				if (isRequired(descriptor)) {
@@ -1261,12 +1270,16 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				return null;
 			}
 
-			String autowiredBeanName;
-			Object instanceCandidate;
+			String autowiredBeanName;  //存储被用来自动注入的对象对应的beanName
+			Object instanceCandidate;  //存储被用来自动注入的对象
 
+			//如果自动注入匹配的对象有多个
 			if (matchingBeans.size() > 1) {
+				//判断该bean是否是primary 或者加了 priority等，有则返回这个beanName，没有则返回 null
 				autowiredBeanName = determineAutowireCandidate(matchingBeans, descriptor);
+				//如果返回的beanName为null
 				if (autowiredBeanName == null) {
+					//判断该属性是否是必须注入，或者是数组，map等集合类型，如果是必须注入，或者非集合类型，则抛出异常
 					if (isRequired(descriptor) || !indicatesMultipleBeans(type)) {
 						return descriptor.resolveNotUnique(descriptor.getResolvableType(), matchingBeans);
 					}
@@ -1277,21 +1290,26 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 						return null;
 					}
 				}
+				//如果返回的beanName不为null，则直接取该beanName对应的对象作为依赖注入的对象
 				instanceCandidate = matchingBeans.get(autowiredBeanName);
 			}
+			//如果自动注入匹配的对象只有一个
 			else {
 				// We have exactly one match.
+				//取出这个对象并为相应的变量赋值
 				Map.Entry<String, Object> entry = matchingBeans.entrySet().iterator().next();
 				autowiredBeanName = entry.getKey();
 				instanceCandidate = entry.getValue();
 			}
 
+			//将被用来自动注入的对象的beanName放进 autowiredBeanNames 这个列表中
 			if (autowiredBeanNames != null) {
 				autowiredBeanNames.add(autowiredBeanName);
 			}
 			if (instanceCandidate instanceof Class) {
 				instanceCandidate = descriptor.resolveCandidate(autowiredBeanName, type, this);
 			}
+			//将被用来注入的对象赋值给 result，最终返回这个 result
 			Object result = instanceCandidate;
 			if (result instanceof NullBean) {
 				if (isRequired(descriptor)) {
@@ -1454,9 +1472,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	protected Map<String, Object> findAutowireCandidates(
 			@Nullable String beanName, Class<?> requiredType, DependencyDescriptor descriptor) {
 
+		//根据属性的类型获取可以被用来注入的bean的名称
 		String[] candidateNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 				this, requiredType, true, descriptor.isEager());
+		//存储可以被用来注入的对象的集合
 		Map<String, Object> result = new LinkedHashMap<>(candidateNames.length);
+		//-----------
 		for (Map.Entry<Class<?>, Object> classObjectEntry : this.resolvableDependencies.entrySet()) {
 			Class<?> autowiringType = classObjectEntry.getKey();
 			if (autowiringType.isAssignableFrom(requiredType)) {
@@ -1468,8 +1489,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 			}
 		}
+		//循环所有通过属性类型获取到的beanName
 		for (String candidate : candidateNames) {
 			if (!isSelfReference(beanName, candidate) && isAutowireCandidate(candidate, descriptor)) {
+				//在这个方法中根据属性类型对应的beanName去获取作为依赖注入的对象，然后放入 result 这个map中
+				//......beanFactory.getBean(beanName)
 				addCandidateEntry(result, candidate, descriptor, requiredType);
 			}
 		}
@@ -1495,6 +1519,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 			}
 		}
+		//返回可以被用来注入的对象的集合
 		return result;
 	}
 
@@ -1513,7 +1538,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 		else if (containsSingleton(candidateName) || (descriptor instanceof StreamDependencyDescriptor &&
 				((StreamDependencyDescriptor) descriptor).isOrdered())) {
+			//根据候选的beanName去获取被用来注入的bean对象，实际上就是通过beanFactory.getBean(beanName)去获取对象
 			Object beanInstance = descriptor.resolveCandidate(candidateName, requiredType, this);
+			//将获取到的可以被用来注入的对象放入候选列表
 			candidates.put(candidateName, (beanInstance instanceof NullBean ? null : beanInstance));
 		}
 		else {

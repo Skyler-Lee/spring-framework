@@ -105,14 +105,18 @@ public class InjectionMetadata {
 	}
 
 	public void inject(Object target, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+		//获取需要进行依赖注入的元素
 		Collection<InjectedElement> checkedElements = this.checkedElements;
 		Collection<InjectedElement> elementsToIterate =
 				(checkedElements != null ? checkedElements : this.injectedElements);
 		if (!elementsToIterate.isEmpty()) {
+			//遍历所有元素，依次进行注入
 			for (InjectedElement element : elementsToIterate) {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Processing injected element of bean '" + beanName + "': " + element);
 				}
+				//进行依赖注入，注意这里执行的是 AutowiredAnnotationBeanPostProcessor 中的方法
+				//AutowiredAnnotationBeanPostProcessor 中有两个方法，一个对属性进行注入，一个对方法进行注入
 				element.inject(target, beanName, pvs);
 			}
 		}
@@ -218,9 +222,13 @@ public class InjectionMetadata {
 		protected void inject(Object target, @Nullable String requestingBeanName, @Nullable PropertyValues pvs)
 				throws Throwable {
 
+			//判断当前进行依赖注入的元素是一个属性还是一个方法
 			if (this.isField) {
 				Field field = (Field) this.member;
+				//设置为可操作，java反射的知识
 				ReflectionUtils.makeAccessible(field);
+				//进行属性填充，target是目标对象，java反射的知识
+				//这里主要看 getResourceToInject()这个方法是如何获取属性值的
 				field.set(target, getResourceToInject(target, requestingBeanName));
 			}
 			else {

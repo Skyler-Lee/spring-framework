@@ -507,7 +507,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			/**
-			 * 在bean初始化之前应用后置处理，如果后置处理返回的bean不为空，则直接返回，
+			 * 在bean实例化之前应用后置处理，如果后置处理返回的bean不为空，则直接返回，
 			 * 如果在这里被返回了，则spring不会去维护bean中的任何依赖，这里主要是处理实现了
 			 * InstantiationAwareBeanPostProcessor的bean后置处理器，这个后置处理器是spring内部自己使用，
 			 * 这个后置处理器中有很多个方法，这里执行的是 postProcessBeforeInstantiation() 和
@@ -576,7 +576,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			/**
 			 * 创建bean实例，并将实例包裹在BeanWrapper实现类对象中返回，在这里得到一个单例对象
 			 * createBeanInstance 中包含三种创建bean实例的方式：
-			 *  1. 通过工厂方法创建bean实例
+			 *  1. 通过工厂方法创建bean实例（factory-method）
 			 *  2. 通过构造方法自动注入（autowire by construct）的方式创建bean实例
 			 *  3. 通过无参构造方法反射创建bean实例
 			 *
@@ -588,20 +588,30 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		final Object bean = instanceWrapper.getWrappedInstance();
 		//通过包装对象拿到bean的类类型
 		Class<?> beanType = instanceWrapper.getWrappedClass();
+		//设置BeanDefinition中的resolvedTargetType为bean的类类型
 		if (beanType != NullBean.class) {
 			mbd.resolvedTargetType = beanType;
 		}
 
 		// Allow post-processors to modify the merged bean definition.
 		synchronized (mbd.postProcessingLock) {
+			//postProcessed标识是否被 MergedBeanDefinitionPostProcessor 应用过，默认为false
 			if (!mbd.postProcessed) {
 				try {
+					/**
+					 * 执行实现了 MergedBeanDefinitionPostProcessor 的后置处理器的 postProcessMergedBeanDefinition()方法，
+					 * 这里主要是执行CommonAnnotationBeanPostProcessor 和 AutowiredAnnotationBeanPostProcessor这里个后置处理器，
+					 * postProcessMergedBeanDefinition()中会先去找到bean中需要依赖注入的属性，然后存储在缓存中，后面进行依赖注入
+					 * 的时候，就是直接从缓存中取出需要进行依赖注入的属性，这里以 AutowiredAnnotationBeanPostProcessor 这个后置
+					 * 处理器为例进行说明
+					 */
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
 					throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 							"Post-processing of merged bean definition failed", ex);
 				}
+				//将标识置为true，表示已被 MergedBeanDefinitionPostProcessor 应用过
 				mbd.postProcessed = true;
 			}
 		}
@@ -616,13 +626,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						"' to allow for resolving potential circular references");
 			}
 			//将bean实例放进 singletonFactories和 registeredSingletons中，并从 earlySingletonObjects中移除
+			//循环依赖时如果依赖的bean正在被创建，会从singletonFactories这个map中取出该正在被创建的bean
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
-			//进行依赖注入，解决循环依赖
+			/**
+			 * 进行依赖注入，解决循环依赖
+			 */
 			populateBean(beanName, mbd, instanceWrapper);
 			//执行BeanPostProcessor，aop就是在这里完成的
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
@@ -1121,9 +1134,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition
 	 */
 	protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class<?> beanType, String beanName) {
+		//执行所有的MergedBeanDefinitionPostProcessor后置处理器
 		for (BeanPostProcessor bp : getBeanPostProcessors()) {
 			if (bp instanceof MergedBeanDefinitionPostProcessor) {
 				MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
+				//执行该方法，这里以 AutowiredAnnotationBeanPostProcessor 为例
 				bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
 			}
 		}
@@ -1219,7 +1234,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		 * 通过上面的英文注释可以知道这是一个Shortcut，当多次构建同一个bean时，可以使用这个Shortcut
 		 * 也就是说不再需要每次推断应该使用哪种方式构建bean，比如在多次构建同一个prototype类型的bean时，
 		 * 就可以走此处的Shortcut，这里的 resolved 和 mbd.constructorArgumentsResolved 将会在bean第一次
-		 *初始化的过程中被设置，后面证明
+		 *实例化的过程中被设置，后面证明
 		 */
 		boolean resolved = false;
 		boolean autowireNecessary = false;
@@ -1505,7 +1520,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					/**
 					 * 这里主要执行的是 CommonAnnotationBeanPostProcessor 和 AutowiredAnnotationPostprocessor 中的方法
 					 * 其中，CommonAnnotationBeanPostProcessor 主要是对@PostConstruct、@Resource等注解做处理
-					 * AutowiredAnnotationPostprocessor 主要是对@Autowired注解做处理
+					 * AutowiredAnnotationPostprocessor 主要是对@Autowired、@Value注解做处理
 					 * ！！！依赖注入就是在这里面完成的！！！包括循环依赖！！！
 					 */
 					PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
