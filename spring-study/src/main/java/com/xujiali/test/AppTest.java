@@ -1,6 +1,7 @@
 package com.xujiali.test;
 
 import com.xujiali.app.AppConfig;
+import com.xujiali.service.IUserService;
 import com.xujiali.service.impl.UserService;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -17,8 +18,8 @@ public class AppTest {
 		 * 3. 初始化spring环境，完成类的扫描、解析和实例化
 		 * ac.refresh();
 		 * */
-		UserService userService = (UserService) ac.getBean("userService");
-		userService.show();
+		IUserService userService = (IUserService) ac.getBean("userService");
+		userService.query();
 
 	}
 }

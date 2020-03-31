@@ -18,9 +18,9 @@ pom.xml
 activemq-data/
 
 classes/
-/build
+#/build
 buildSrc/build
-/spring-*/build
+#/spring-*/build
 /spring-core/kotlin-coroutines/build
 /framework-bom/build
 /integration-tests/build
@@ -41,4 +41,4 @@ out
 test-output
 atlassian-ide-plugin.xml
 .gradletasknamecache
-/spring-study/
+

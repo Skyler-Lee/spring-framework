@@ -73,10 +73,13 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	protected Object[] getAdvicesAndAdvisorsForBean(
 			Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
 
+		//查找合格的增强逻辑
 		List<Advisor> advisors = findEligibleAdvisors(beanClass, beanName);
+		//如果增强逻辑为空，返回 null
 		if (advisors.isEmpty()) {
 			return DO_NOT_PROXY;
 		}
+		//否则，将其转成数组返回
 		return advisors.toArray();
 	}
 
@@ -91,7 +94,9 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @see #extendAdvisors
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
+		//找到所有候选的增强
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
+		//找到可以应用的增强
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
 		extendAdvisors(eligibleAdvisors);
 		if (!eligibleAdvisors.isEmpty()) {

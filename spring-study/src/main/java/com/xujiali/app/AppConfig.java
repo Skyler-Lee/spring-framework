@@ -7,6 +7,6 @@ import org.springframework.context.annotation.ImportResource;
 
 @Configuration
 @ComponentScan("com.xujiali")
-//@EnableAspectJAutoProxy
+@EnableAspectJAutoProxy
 public class AppConfig {
 }
