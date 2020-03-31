@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="org.springframework.context.annotation.configuration.ImportResourceTests" tests="8" skipped="0" failures="0" errors="0" timestamp="2019-12-09T02:20:35" hostname="DESKTOP-246NTI5" time="0.121">
+  <properties/>
+  <testcase name="importNonXmlResource()" classname="org.springframework.context.annotation.configuration.ImportResourceTests" time="0.013"/>
+  <testcase name="importXml()" classname="org.springframework.context.annotation.configuration.ImportResourceTests" time="0.015"/>
+  <testcase name="importWithPlaceholder()" classname="org.springframework.context.annotation.configuration.ImportResourceTests" time="0.011"/>
+  <testcase name="importXmlWithNamespaceConfig()" classname="org.springframework.context.annotation.configuration.ImportResourceTests" time="0.014"/>
+  <testcase name="importXmlWithAutowiredConfig()" classname="org.springframework.context.annotation.configuration.ImportResourceTests" time="0.014"/>
+  <testcase name="importXmlIsInheritedFromSuperclassDeclarations()" classname="org.springframework.context.annotation.configuration.ImportResourceTests" time="0.014"/>
+  <testcase name="importXmlIsMergedFromSuperclassDeclarations()" classname="org.springframework.context.annotation.configuration.ImportResourceTests" time="0.015"/>
+  <testcase name="importXmlWithOtherConfigurationClass()" classname="org.springframework.context.annotation.configuration.ImportResourceTests" time="0.021"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

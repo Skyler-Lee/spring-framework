@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="org.springframework.scripting.config.ScriptingDefaultsTests" tests="6" skipped="0" failures="0" errors="0" timestamp="2019-12-09T02:21:11" hostname="DESKTOP-246NTI5" time="0.411">
+  <properties/>
+  <testcase name="defaultAutowire()" classname="org.springframework.scripting.config.ScriptingDefaultsTests" time="0.26"/>
+  <testcase name="nameAsAlias()" classname="org.springframework.scripting.config.ScriptingDefaultsTests" time="0.033"/>
+  <testcase name="defaultInitMethod()" classname="org.springframework.scripting.config.ScriptingDefaultsTests" time="0.035"/>
+  <testcase name="defaultProxyTargetClass()" classname="org.springframework.scripting.config.ScriptingDefaultsTests" time="0.024"/>
+  <testcase name="defaultRefreshCheckDelay()" classname="org.springframework.scripting.config.ScriptingDefaultsTests" time="0.03"/>
+  <testcase name="defaultDestroyMethod()" classname="org.springframework.scripting.config.ScriptingDefaultsTests" time="0.028"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

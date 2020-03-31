@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="org.springframework.context.support.Spr7283Tests" tests="1" skipped="0" failures="0" errors="0" timestamp="2019-12-09T02:20:48" hostname="DESKTOP-246NTI5" time="0.011">
+  <properties/>
+  <testcase name="testListWithInconsistentElementType()" classname="org.springframework.context.support.Spr7283Tests" time="0.011"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
