@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="org.springframework.beans.factory.annotation.CustomAutowireConfigurerTests" tests="1" skipped="0" failures="0" errors="0" timestamp="2019-12-09T02:19:24" hostname="DESKTOP-246NTI5" time="1.205">
+  <properties/>
+  <testcase name="testCustomResolver()" classname="org.springframework.beans.factory.annotation.CustomAutowireConfigurerTests" time="1.205"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

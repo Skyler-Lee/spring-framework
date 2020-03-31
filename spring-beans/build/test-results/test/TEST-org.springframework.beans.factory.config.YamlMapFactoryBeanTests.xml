@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="org.springframework.beans.factory.config.YamlMapFactoryBeanTests" tests="8" skipped="0" failures="0" errors="0" timestamp="2019-12-09T02:19:29" hostname="DESKTOP-246NTI5" time="0.185">
+  <properties/>
+  <testcase name="testMapWithIntegerValue()" classname="org.springframework.beans.factory.config.YamlMapFactoryBeanTests" time="0.108"/>
+  <testcase name="testFirstFound()" classname="org.springframework.beans.factory.config.YamlMapFactoryBeanTests" time="0.051"/>
+  <testcase name="testSetBarfOnResourceNotFound()" classname="org.springframework.beans.factory.config.YamlMapFactoryBeanTests" time="0.018"/>
+  <testcase name="testMapWithPeriodsInKey()" classname="org.springframework.beans.factory.config.YamlMapFactoryBeanTests" time="0.0"/>
+  <testcase name="testOverrideAndRemoveDefaults()" classname="org.springframework.beans.factory.config.YamlMapFactoryBeanTests" time="0.001"/>
+  <testcase name="testGetObject()" classname="org.springframework.beans.factory.config.YamlMapFactoryBeanTests" time="0.0"/>
+  <testcase name="testDuplicateKey()" classname="org.springframework.beans.factory.config.YamlMapFactoryBeanTests" time="0.001"/>
+  <testcase name="testSetIgnoreResourceNotFound()" classname="org.springframework.beans.factory.config.YamlMapFactoryBeanTests" time="0.001"/>
+  <system-out><![CDATA[10:19:29.341 [Test worker] WARN  o.s.b.f.c.YamlMapFactoryBean - Could not load map from non-existent: planned
+10:19:29.409 [Test worker] WARN  o.s.b.f.c.YamlMapFactoryBean - Could not load map from file [E:\004_project\Git\spring-framework-5.2.2.RELEASE\spring-beans\non-exsitent-file.yml]: non-exsitent-file.yml
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
